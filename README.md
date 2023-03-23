@@ -14,7 +14,7 @@ O sistema é composto por dois arquivos Python: `Client.py` e `Server.py`. O arq
 1. Clone o repositório:
 
 ```
-git clone https://github.com/lubpolita/ServerClienteFiles.git
+git clone https://github.com/lubpolita/SendFilesUdp.git
 ```
 
 2. Crie uma pasta com o nome de `files` onde irá executar o `Server.py` e adicione os arquivos que você deseja ter no Servidor.
