@@ -14,7 +14,7 @@ BUFFER_SIZE = 1024
 MAX_PACK_SIZE = 1024
 
 # Define o tamanho da janela (em número de pacotes)
-WINDOW_SIZE = 10
+WINDOW_SIZE = 5
 
 # Define o separador para que seja possível ler o número de cada pacote
 SEPARATOR = "##"

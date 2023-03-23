@@ -26,7 +26,7 @@ MAX_PACK_SIZE = 1000
 FILES_DIR = "files/"
 
 # Define o tamanho da janela (em número de pacotes)
-WINDOW_SIZE = 10
+WINDOW_SIZE = 5
 
 # Cria uma lista de arquivos disponíveis no servidor
 available_files = os.listdir(FILES_DIR)
