@@ -2,7 +2,7 @@
 
 Este projeto é uma implementação em Python de um sistema de comunicação cliente-servidor UDP seguro com a utilização de janela deslizante. O objetivo deste trabalho é explorar os conceitos de Redes de Computadores II, especificamente protocolos de transporte UDP e janela deslizante.
 
-O sistema é composto por dois arquivos Python: `Client.py` e `Server.py`. O arquivo `Server.py` implementa o servidor UDP que recebe os dados enviados pelo cliente. O arquivo `Client.py` implementa o cliente UDP que envia os dados para o servidor. A implementação de janela deslizante é realizada no arquivo `Client.py`.
+O sistema é composto por dois arquivos Python: `Client.py` e `Server.py`. O arquivo `Server.py` implementa o servidor UDP que recebe os dados enviados pelo cliente. O arquivo `Client.py` implementa o cliente UDP que envia as requisições para o servidor. A implementação de janela deslizante é realizada no arquivo `Client.py`, no método "download_file" e no método "send_file" do arquivo `Server.py`.
 
 ## Requisitos
 
