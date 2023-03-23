@@ -104,30 +104,30 @@ def download_file(filename):
 
                     while window:
                         # Espera até que o socket esteja pronto para leitura
-                        ready_to_read, _, _ = select.select([sock], [], [], 10.0)
-                        if sock in ready_to_read:
-                            packet, server_address = sock.recvfrom(MAX_PACK_SIZE)
+                        # ready_to_read, _, _ = select.select([sock], [], [], 10.0)
+                        # if sock in ready_to_read:
+                        packet, server_address = sock.recvfrom(MAX_PACK_SIZE)
 
-                            # Verifica se o arquivo chegou ao final
-                            if packet.find("FILE_COMPLETE".encode()) != -1:
-                                file.close()
-                                break
+                        # Verifica se o arquivo chegou ao final
+                        if packet.find("FILE_COMPLETE".encode()) != -1:
+                            file.close()
+                            break
 
-                            # Armazena número do pacote recebido
-                            packet_number = int(packet.split(SEPARATOR.encode())[0])
-                            ack_packet = str(packet_number).encode()
+                        # Armazena número do pacote recebido
+                        packet_number = int(packet.split(SEPARATOR.encode())[0])
+                        ack_packet = str(packet_number).encode()
 
-                            # Envia o ACK recebido para o servidor
-                            sock.sendto(ack_packet, server_address) 
+                        # Envia o ACK recebido para o servidor
+                        sock.sendto(ack_packet, server_address) 
 
-                            # Verifica se o número do pacote corresponde ao pacote esperado
-                            if packet_number == expected_packet:
-                                # Salva o pacote recebido no arquivo local
-                                file.write(packet.split(SEPARATOR.encode())[1])
-                                expected_packet += 1
+                        # Verifica se o número do pacote corresponde ao pacote esperado
+                        if packet_number == expected_packet:
+                            # Salva o pacote recebido no arquivo local
+                            file.write(packet.split(SEPARATOR.encode())[1])
+                            expected_packet += 1
 
-                                # Desliza a janela para a frente
-                                window.pop(0)
+                            # Desliza a janela para a frente
+                            window.pop(0)
 
                     # Verifica se o arquivo chegou ao final           
                     if packet.find("FILE_COMPLETE".encode()) != -1:
