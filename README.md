@@ -11,6 +11,14 @@ O sistema é composto por dois arquivos Python: `Client.py` e `Server.py`. O arq
 
 ## Como usar
 
+Certifique-se antes de instalar as bibliotecas externas `speedtest` e `ping3`. Para instalar digite os seguintes comandos no seu terminal:
+
+```
+pip install speedtest-cli
+pip install ping3
+
+```
+
 1. Clone o repositório:
 
 ```
