@@ -16,7 +16,6 @@ Certifique-se antes de instalar as bibliotecas externas `speedtest` e `ping3`. P
 ```
 pip install speedtest-cli
 pip install ping3
-
 ```
 
 1. Clone o repositório:
