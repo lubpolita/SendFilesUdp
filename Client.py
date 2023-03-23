@@ -1,8 +1,9 @@
-import select
-import socket
+import os     # Biblioteca para leitura/escrita de arquivos
+import select # Biblioteca para verificar se o Servidor está disponível
+import socket # Biblioteca para comunicação UDP
+import time   # Biblioteca para adicionar tempo de espera
 
 # Configura o endereço IP e o número de porta do servidor
-# IP = "192.168.15.13"
 IP = "127.0.0.1"
 PORT = 1234
 
@@ -53,8 +54,23 @@ def get_available_files():
 
         return data.decode().split("\n")
     
+# Mostra tela de download enquanto o arquivo é processado
+def show_download_screen():
+    progress = 0
+    while progress < 100:
+        os.system('cls')
+        print("Baixando arquivo: [", end="")
+        for i in range(20):
+            if i < progress // 5:
+                print("=", end="")
+            else:
+                print(" ", end="")
+        print("] {}%".format(progress))
+        time.sleep(0.01)
+        progress += 2
 
-def teste(filename):
+# Realiza o download do arquivo com janela deslizante
+def download_file(filename):
     sock.sendto(("download " + filename).encode(), (IP, PORT))
     
     # Espera até que o socket esteja pronto para leitura
@@ -81,6 +97,7 @@ def teste(filename):
             with open(local_filename, "wb") as file:
                 
                 expected_packet = 0
+                print('Aguarde... a comunicação está sendo feita com o servidor')
                 while True:
                     # Inicializa a janela de recebimento com pacotes vazios
                     window = list(range(WINDOW_SIZE))
@@ -91,24 +108,30 @@ def teste(filename):
                         if sock in ready_to_read:
                             packet, server_address = sock.recvfrom(MAX_PACK_SIZE)
 
+                            # Verifica se o arquivo chegou ao final
                             if packet.find("FILE_COMPLETE".encode()) != -1:
-                                print("O arquivo foi baixado com sucesso!")
                                 file.close()
                                 break
+
                             # Armazena número do pacote recebido
                             packet_number = int(packet.split(SEPARATOR.encode())[0])
-                            print(packet_number)
-                            print(expected_packet)
                             ack_packet = str(packet_number).encode()
+
+                            # Envia o ACK recebido para o servidor
                             sock.sendto(ack_packet, server_address) 
 
                             # Verifica se o número do pacote corresponde ao pacote esperado
                             if packet_number == expected_packet:
-                                # Salva o pacote recebido no arquivo local e envia o ACK para o servidor
+                                # Salva o pacote recebido no arquivo local
                                 file.write(packet.split(SEPARATOR.encode())[1])
                                 expected_packet += 1
+
+                                # Desliza a janela para a frente
                                 window.pop(0)
+
+                    # Verifica se o arquivo chegou ao final           
                     if packet.find("FILE_COMPLETE".encode()) != -1:
+                        show_download_screen()
                         print("O arquivo foi baixado com sucesso!")
                         break
                     
@@ -157,7 +180,7 @@ while True:
 
     elif option == "2":
         filename = input("Digite o nome do arquivo a ser baixado: ")
-        teste(filename)
+        download_file(filename)
 
     elif option == "3":
         break

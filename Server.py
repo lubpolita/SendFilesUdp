@@ -1,7 +1,7 @@
-import select
-import socket
-import os
-import time
+import select # Biblioteca para verificar se o Servidor está disponível
+import socket # Biblioteca para comunicação UDP
+import os     # Biblioteca para leitura/escrita de arquivos
+import time   # Biblioteca para adicionar tempo de espera
 
 # Configura o endereço IP e o número de porta do servidor
 IP = ""
@@ -20,7 +20,7 @@ PASSWORD = "senha123"
 BUFFER_SIZE = 1024
 
 # Define o tamanho máximo de cada pacote
-MAX_PACK_SIZE = 512
+MAX_PACK_SIZE = 1000
 
 # Configura a pasta onde os arquivos estão armazenados
 FILES_DIR = "files/"
@@ -31,11 +31,13 @@ WINDOW_SIZE = 10
 # Cria uma lista de arquivos disponíveis no servidor
 available_files = os.listdir(FILES_DIR)
 
+# Classe para guardar a variável de Autenticação
 class Authentication:
     def __init__(self, auth):
         self.authenticated = auth
 
-def teste(filename, client_address):
+# Função para o envio do arquivo com janela deslizante
+def send_file(filename, client_address):
     file_path = os.path.join(FILES_DIR, filename)
 
     # Abre o arquivo para leitura em modo binário
@@ -43,21 +45,29 @@ def teste(filename, client_address):
         # Inicializa a janela
         window = [file.read(MAX_PACK_SIZE) for i in range(WINDOW_SIZE)]
        
+       # Inicializa o número de pacotes, ACK esperado e separador para que seja possível a leitura do número do pct pelo cliente
         packet_number = 0
         exp_ack = 0
         separator = "##"
         
+        # Volta o ponteiro de leitura do arquivo para o inicio
         file.seek(0)
         while True:
+            # Reinicia janela
             window.clear()
+
+            # Contador de pacotes válidos
             count_valid_packs = 0
-            # Preenche a janela
+            
+            # Preenche a janela do tamanho WINDOW_SIZE
             for i in range(WINDOW_SIZE):
                 pack = (file.read(MAX_PACK_SIZE))
+                # Se o pacote for válido atualiza o contador de pacotes válidos
                 if pack:
                     count_valid_packs += 1
                 window.append(pack)
-                
+            
+            # Verifica se ainda restou algum pacote na janela para ser enviado
             if count_valid_packs == 0:
                 break
 
@@ -82,10 +92,8 @@ def teste(filename, client_address):
                         # Recebe ACK do cliente
                         ack_packet, _ = sock.recvfrom(MAX_PACK_SIZE)
                         ack_number = int(ack_packet)
-
-                        # print(ack_number)
-                        # print(exp_ack)
                         
+                        # Verifica se o ACK do cliente é o ACK esperado
                         while ack_number != exp_ack:
                             # Envia novamente o pacote com erro
                             sock.sendto(packet, client_address)
@@ -94,9 +102,11 @@ def teste(filename, client_address):
                             # Espera até que o socket esteja pronto para leitura
                             ready_to_read, _, _ = select.select([sock], [], [], 3.0)
                             if sock in ready_to_read:
+                                # Recebe o novo ACK enviado pelo cliente
                                 ack_packet, _ = sock.recvfrom(MAX_PACK_SIZE)
                                 ack_number = int(ack_packet)
                         
+                        # Caso o ACK esteja correto, o próximo pacote é enviado
                         exp_ack += 1
                         packet_number += 1
 
@@ -105,10 +115,12 @@ def teste(filename, client_address):
                     sock.sendto(packet, client_address)
                     time.sleep(0.02)
 
+        # Envia esse pacote para o cliente saber que o arquivo terminou
         sock.sendto(b"##FILE_COMPLETE", client_address)
         print("Arquivo enviado com sucesso.")
         sock.settimeout(0)
-        
+
+# Controle do menu do cliente
 def menu_control(auth):
     password = ''
 
@@ -124,26 +136,32 @@ def menu_control(auth):
         if not auth.authenticated: 
             sock.sendto(b"error_auth", client_address) 
             return
-
+        # Recupera os aquivos e envia para o cliente
         message = "\n".join(available_files)
         sock.sendto(message.encode(), client_address)
 
     # Se a mensagem for uma solicitação de download, envia o arquivo correspondente para o cliente
     elif data.startswith(b"download "):
+        # Verifica se o cliente inseriu a senha corretamente
         if not auth.authenticated: 
             sock.sendto(b"error_auth", client_address)
-            
             return
-
-        filename = data.split()[1].decode()
+        
+        # Recupera o nome do arquivo
+        try:
+            filename = data.split()[1].decode()
+        except IndexError:
+            print('O nome do arquivo enviado pelo cliente não é válido.')
+            sock.sendto(b"error", client_address)
+            return
+        
         if filename in available_files:
             sock.sendto(b"ok", client_address)
-            teste(filename, client_address)
-            print('arq enviado')
-        
+            send_file(filename, client_address)
         else:
             sock.sendto(b"error", client_address)
 
+    # Se a mensagem for uma solicitação de autenticação, verifica a senha correspondente a variável PASSWORD
     elif data.startswith(b"auth "):
         password = data.split()[1].decode()
 
@@ -156,6 +174,7 @@ def menu_control(auth):
         sock.sendto(b"sucess_pass", client_address)
 
 
+# Inicializa a autenticação
 authentication = Authentication(False)
 
 menu_control(authentication)
