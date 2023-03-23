@@ -17,23 +17,25 @@ O sistema é composto por dois arquivos Python: `Client.py` e `Server.py`. O arq
 git clone https://github.com/lubpolita/ServerClienteFiles.git
 ```
 
-2. Execute o arquivo `Server.py` em um terminal:
+2. Crie uma pasta com o nome de `files` onde irá executar o `Server.py` e adicione os arquivos que você deseja ter no Servidor.
+
+3. Execute o arquivo `Server.py` em um terminal:
 
 ```python
 python3 Server.py
 ```
 
-3. Modifique o arquivo `Cliente.py`, certifique-se que a variável global `IP` está configurada com o ip da máquina onde está executando o `Servidor.py`.
+4. Modifique o arquivo `Cliente.py`, certifique-se que a variável global `IP` está configurada com o ip da máquina onde está executando o `Server.py`.
 
-4. Execute o arquivo `Client.py` em outro terminal:
+5. Execute o arquivo `Client.py` em outro terminal:
 
 ```python
 python3 Client.py
 ```
 
-5. Insira a senha definida em `Server.py`. Por padrão a senha será: "senha123".
+6. Insira a senha definida em `Server.py`. Por padrão a senha será: "senha123".
 
-6. Se você for autenticado será exibido um menu com 3 opções: listar, download e sair.
+7. Se você for autenticado será exibido um menu com 3 opções: listar, download e sair.
 - Listar: lista todos os arquivos armazenados no servidor.
 - Download: insira o nome do arquivo que deseja baixar da lista.
 - Sair: sai da aplicação e encerra o socket.
