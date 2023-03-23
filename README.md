@@ -43,9 +43,10 @@ python3 Client.py
 
 6. Insira a senha definida em `Server.py`. Por padrão a senha será: "senha123".
 
-7. Se você for autenticado será exibido um menu com 3 opções: listar, download e sair.
+7. Se você for autenticado será exibido um menu com 4 opções: listar, download, exibir métricas e sair.
 - Listar: lista todos os arquivos armazenados no servidor.
 - Download: insira o nome do arquivo que deseja baixar da lista.
+- Exibir métricas: exibe o RTT e a largura de banda disponível.
 - Sair: sai da aplicação e encerra o socket.
 
 O servidor enviará o arquivo para o cliente com a implementação de janela deslizante. O arquivo será recebido pelo cliente e a mensagem "O arquivo foi baixado com sucesso!" será exibida no terminal do cliente.
