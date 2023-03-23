@@ -1,11 +1,12 @@
+import hashlib
 import select # Biblioteca para verificar se o Servidor está disponível
 import socket # Biblioteca para comunicação UDP
-import os     # Biblioteca para leitura/escrita de arquivos
+import os     # Biblioteca para leitura de arquivos
 import time   # Biblioteca para adicionar tempo de espera
 
 # Configura o endereço IP e o número de porta do servidor
 IP = ""
-PORT = 1234
+PORT = 2000
 
 # Cria um socket UDP
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -49,6 +50,8 @@ def send_file(filename, client_address):
         packet_number = 0
         exp_ack = 0
         separator = "##"
+        retransmitted_packets = 0
+        transmitted_packets = 0
         
         # Volta o ponteiro de leitura do arquivo para o inicio
         file.seek(0)
@@ -78,47 +81,65 @@ def send_file(filename, client_address):
                         
                 # Envia o pacote para o cliente
                 sock.sendto(packet, client_address)
+                transmitted_packets = +1
                 time.sleep(0.02)
 
                 # Aguarda o ACK do cliente
                 sock.settimeout(2)
 
                 try:
-                    # Espera até que o socket esteja pronto para leitura
-                    ready_to_read, _, _ = select.select([sock], [], [], 3.0)
-                    if sock in ready_to_read:
-                        time.sleep(0.02) # aguarda instantes para o cliente confirmar
+                    time.sleep(0.02) # aguarda instantes para o cliente confirmar
 
-                        # Recebe ACK do cliente
-                        ack_packet, _ = sock.recvfrom(MAX_PACK_SIZE)
-                        ack_number = int(ack_packet)
-                        
-                        # Verifica se o ACK do cliente é o ACK esperado
-                        while ack_number != exp_ack:
-                            # Envia novamente o pacote com erro
-                            sock.sendto(packet, client_address)
-                            time.sleep(0.02)
-                        
-                            # Espera até que o socket esteja pronto para leitura
-                            ready_to_read, _, _ = select.select([sock], [], [], 3.0)
-                            if sock in ready_to_read:
-                                # Recebe o novo ACK enviado pelo cliente
-                                ack_packet, _ = sock.recvfrom(MAX_PACK_SIZE)
-                                ack_number = int(ack_packet)
-                        
-                        # Caso o ACK esteja correto, o próximo pacote é enviado
-                        exp_ack += 1
-                        packet_number += 1
+                    # Recebe ACK do cliente
+                    ack_packet, _ = sock.recvfrom(MAX_PACK_SIZE)
+                    ack_number = int(ack_packet)
+                    
+                    # Verifica se o ACK do cliente é o ACK esperado
+                    while ack_number != exp_ack:
+                        # Envia novamente o pacote com erro
+                        sock.sendto(packet, client_address)
+                        time.sleep(0.02)
+
+                        # Contabiliza nos pacotes retransmitidos
+                        retransmitted_packets += 1
+                    
+                        # Espera até que o socket esteja pronto para leitura
+                        ready_to_read, _, _ = select.select([sock], [], [], 3.0)
+                        if sock in ready_to_read:
+                            # Recebe o novo ACK enviado pelo cliente
+                            ack_packet, _ = sock.recvfrom(MAX_PACK_SIZE)
+                            ack_number = int(ack_packet)
+                    
+                    # Caso o ACK esteja correto, o próximo pacote é enviado
+                    exp_ack += 1
+                    packet_number += 1
 
                 except socket.timeout:
                     # Envia novamente o pacote com erro caso timeout
                     sock.sendto(packet, client_address)
                     time.sleep(0.02)
 
+                    # Contabiliza nos pacotes retransmitidos
+                    retransmitted_packets += 1
+
         # Envia esse pacote para o cliente saber que o arquivo terminou
         sock.sendto(b"##FILE_COMPLETE", client_address)
-        print("Arquivo enviado com sucesso.")
+        with open(file_path, 'rb') as file:
+            data = file.read()
+            # Recebe o HASH do arquivo enviado para o cliente
+            hash = hashlib.md5(data).hexdigest()
+            hash_client, _ = sock.recvfrom(MAX_PACK_SIZE)
+
+            if hash_client == hash.encode():
+                # Envia confirmação para o cliente
+                sock.sendto(b"ok", client_address)
+                print("Arquivo enviado com sucesso.")
+            else:
+                print("Erro no envio do arquivo.")
+        print("\n")
+        print("Pacotes retransmitidos: ", str(retransmitted_packets))
         sock.settimeout(0)
+        return retransmitted_packets + transmitted_packets
 
 # Controle do menu do cliente
 def menu_control(auth):
@@ -157,7 +178,16 @@ def menu_control(auth):
         
         if filename in available_files:
             sock.sendto(b"ok", client_address)
-            send_file(filename, client_address)
+
+            start_time = time.time()
+            total_packets = send_file(filename, client_address)
+            end_time = time.time()
+
+            # Calcular a taxa de transferência
+            total_bytes = MAX_PACK_SIZE * total_packets
+            total_time = end_time - start_time
+            throughput = total_bytes / total_time
+            print(f'Throughput: {throughput:.2f} bytes/segundo')
         else:
             sock.sendto(b"error", client_address)
 

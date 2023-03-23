@@ -1,11 +1,13 @@
-import os     # Biblioteca para leitura/escrita de arquivos
+import hashlib
 import select # Biblioteca para verificar se o Servidor está disponível
 import socket # Biblioteca para comunicação UDP
 import time   # Biblioteca para adicionar tempo de espera
+import speedtest # Biblioteca para encontrar a largura de banda
+import ping3 # Biblioteca para encontrar o RTT
 
 # Configura o endereço IP e o número de porta do servidor
 IP = "127.0.0.1"
-PORT = 1234
+PORT = 2000
 
 # Configura o tamanho do buffer de dados
 BUFFER_SIZE = 1024
@@ -58,7 +60,6 @@ def get_available_files():
 def show_download_screen():
     progress = 0
     while progress < 100:
-        os.system('cls')
         print("Baixando arquivo: [", end="")
         for i in range(20):
             if i < progress // 5:
@@ -103,9 +104,6 @@ def download_file(filename):
                     window = list(range(WINDOW_SIZE))
 
                     while window:
-                        # Espera até que o socket esteja pronto para leitura
-                        # ready_to_read, _, _ = select.select([sock], [], [], 10.0)
-                        # if sock in ready_to_read:
                         packet, server_address = sock.recvfrom(MAX_PACK_SIZE)
 
                         # Verifica se o arquivo chegou ao final
@@ -131,8 +129,19 @@ def download_file(filename):
 
                     # Verifica se o arquivo chegou ao final           
                     if packet.find("FILE_COMPLETE".encode()) != -1:
-                        show_download_screen()
-                        print("O arquivo foi baixado com sucesso!")
+                        show_download_screen() # Tela de download
+
+                        # Lê o arquivo e cria um HASH para ele
+                        with open(filename, 'rb') as file:
+                            received_data = file.read()
+                            hash = hashlib.md5(received_data).hexdigest()
+                            # Envia o HASH do arquivo recebido para o servidor
+                            sock.sendto(hash.encode(), server_address) 
+                            data, _ = sock.recvfrom(BUFFER_SIZE)
+                            if data == b"ok":
+                                print("O arquivo foi baixado com sucesso!")
+                            else:
+                                print("Ocorreu um erro durante o download do arquivo.")
                         break
                     
         except socket.timeout:
@@ -165,7 +174,8 @@ while True:
     print("Escolha uma opção:")
     print("1. Listar arquivos disponíveis no servidor")
     print("2. Baixar um arquivo")
-    print("3. Sair")
+    print("3. Exibir RTT e largura de banda")
+    print("4. Sair")
 
     # Lê a opção escolhida pelo usuário
     option = input("> ")
@@ -182,8 +192,19 @@ while True:
         filename = input("Digite o nome do arquivo a ser baixado: ")
         download_file(filename)
 
-    elif option == "3":
+    elif option == "4":
         break
+
+    elif option == "3":
+        # Mede a largura de banda
+        st = speedtest.Speedtest()
+        download_speed = st.download() / 1000000
+        upload_speed = st.upload() / 1000000
+        print(f"Largura de banda: \n\t Download: {download_speed} Mbps, Upload: {upload_speed} Mbps")
+
+        # Mede o RTT
+        rtt = ping3.ping(IP)
+        print(f"RTT: {rtt} ms")
     
     else:
         print("Opção inválida")
