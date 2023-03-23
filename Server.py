@@ -1,8 +1,8 @@
-import hashlib
-import select # Biblioteca para verificar se o Servidor está disponível
-import socket # Biblioteca para comunicação UDP
-import os     # Biblioteca para leitura de arquivos
-import time   # Biblioteca para adicionar tempo de espera
+import hashlib # Biblioteca para criar a hash de verificação do arquivo
+import select  # Biblioteca para verificar se o Servidor está disponível
+import socket  # Biblioteca para comunicação UDP
+import os      # Biblioteca para leitura de arquivos
+import time    # Biblioteca para adicionar tempo de espera
 
 # Configura o endereço IP e o número de porta do servidor
 IP = ""
@@ -18,7 +18,10 @@ sock.bind((IP, PORT))
 PASSWORD = "senha123"
 
 # Configura o tamanho do buffer de dados
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 1400
+
+# Configura a quantidade de tentativas, caso TIMEOUT
+ATTEMPTS = 1
 
 # Define o tamanho máximo de cada pacote
 MAX_PACK_SIZE = 1000
@@ -52,7 +55,8 @@ def send_file(filename, client_address):
         separator = "##"
         retransmitted_packets = 0
         transmitted_packets = 0
-        
+        attempts = 0
+
         # Volta o ponteiro de leitura do arquivo para o inicio
         file.seek(0)
         while True:
@@ -73,7 +77,7 @@ def send_file(filename, client_address):
             # Verifica se ainda restou algum pacote na janela para ser enviado
             if count_valid_packs == 0:
                 break
-
+            
             # Envio da janela
             for packet in window:
                 # Adiciona o número do pacote ao início do pacote
@@ -85,7 +89,7 @@ def send_file(filename, client_address):
                 time.sleep(0.02)
 
                 # Aguarda o ACK do cliente
-                sock.settimeout(2)
+                sock.settimeout(1)
 
                 try:
                     time.sleep(0.02) # aguarda instantes para o cliente confirmar
@@ -115,13 +119,18 @@ def send_file(filename, client_address):
                     packet_number += 1
 
                 except socket.timeout:
+                    if attempts > ATTEMPTS:
+                        print('ERRO: Tempo limite atingido.')
+                        return -1
+                    attempts += 1
+
                     # Envia novamente o pacote com erro caso timeout
                     sock.sendto(packet, client_address)
                     time.sleep(0.02)
 
                     # Contabiliza nos pacotes retransmitidos
                     retransmitted_packets += 1
-
+                
         # Envia esse pacote para o cliente saber que o arquivo terminou
         sock.sendto(b"##FILE_COMPLETE", client_address)
         with open(file_path, 'rb') as file:
@@ -183,10 +192,14 @@ def menu_control(auth):
             total_packets = send_file(filename, client_address)
             end_time = time.time()
 
+            if total_packets == -1:
+                return
+
             # Calcular a taxa de transferência
             total_bytes = MAX_PACK_SIZE * total_packets
             total_time = end_time - start_time
             throughput = total_bytes / total_time
+            print(f"Tempo de download: {total_time:.2f} s")
             print(f'Throughput: {throughput:.2f} bytes/segundo')
         else:
             sock.sendto(b"error", client_address)

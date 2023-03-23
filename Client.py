@@ -1,16 +1,16 @@
-import hashlib
-import select # Biblioteca para verificar se o Servidor está disponível
-import socket # Biblioteca para comunicação UDP
-import time   # Biblioteca para adicionar tempo de espera
+import hashlib   # Biblioteca para criar a hash de verificação do arquivo
+import select    # Biblioteca para verificar se o Servidor está disponível
+import socket    # Biblioteca para comunicação UDP
+import time      # Biblioteca para adicionar tempo de espera
 import speedtest # Biblioteca para encontrar a largura de banda
-import ping3 # Biblioteca para encontrar o RTT
+import ping3     # Biblioteca para encontrar o RTT
 
 # Configura o endereço IP e o número de porta do servidor
 IP = "127.0.0.1"
 PORT = 2000
 
 # Configura o tamanho do buffer de dados
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 1400
 
 # Define o tamanho máximo de cada pacote
 MAX_PACK_SIZE = 1024
